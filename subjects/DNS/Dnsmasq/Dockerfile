@@ -41,6 +41,7 @@ ARG MAKE_OPT
 # Set up fuzzers
 RUN git clone https://github.com/profuzzbench/aflnet.git && \
     cd aflnet && \
+    git checkout -b 4.30c && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
@@ -75,7 +76,8 @@ RUN cd $WORKDIR && \
     cd dnsmasq && \
     git checkout v2.73rc6 && \
     patch -p1 < ${WORKDIR}/dnsmasq.patch && \
-    AFL_USE_ASAN=1 CC=afl-clang-fast make $MAKE_OPT
+#    AFL_USE_ASAN=1 CC=afl-clang-fast make $MAKE_OPT
+    CC=afl-clang-fast make $MAKE_OPT
 
 # Download and compile Dnsmasq for coverage analysis
 RUN cd $WORKDIR && \
@@ -94,3 +96,12 @@ COPY --chown=ubuntu:ubuntu dnsmasq.conf ${WORKDIR}/dnsmasq.conf
 
 RUN cp ${WORKDIR}/dnsmasq.conf /etc/ && \
     echo address=/test.com/5.5.5.5 | sudo tee -a /etc/dnsmasq.conf
+
+# Install rust nightly builds
+RUN apt-get -y update && apt-get install -y curl
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+&& chmod -R a+w $RUSTUP_HOME $CARGO_HOME
+RUN rustup default nightly

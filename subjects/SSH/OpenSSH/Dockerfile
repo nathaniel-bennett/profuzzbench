@@ -41,6 +41,7 @@ ARG MAKE_OPT
 # Set up fuzzers
 RUN git clone https://github.com/profuzzbench/aflnet.git && \
     cd aflnet && \
+    git checkout -b 4.30c && \
     make clean all $MAKE_OPT && \
     cd llvm_mode && make $MAKE_OPT
 
@@ -101,7 +102,8 @@ RUN cd ${WORKDIR} && \
     --with-privsep-path=$PWD/var-empty \
     --with-sandbox=no \
     --with-privsep-user=ubuntu && \
-    AFL_USE_ASAN=1 make $MAKE_OPT && \
+#    AFL_USE_ASAN=1 make $MAKE_OPT && \
+    make $MAKE_OPT && \
     make install
 
 # Download and compile OpenSSH for coverage analysis
@@ -130,3 +132,14 @@ COPY --chown=ubuntu:ubuntu ssh.dict ${WORKDIR}/ssh.dict
 COPY --chown=ubuntu:ubuntu cov_script.sh ${WORKDIR}/cov_script
 COPY --chown=ubuntu:ubuntu run.sh ${WORKDIR}/run
 
+### FIZZLE ###
+
+# Install rust nightly builds
+USER root
+RUN apt-get -y update && apt-get install -y curl
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+&& chmod -R a+w $RUSTUP_HOME $CARGO_HOME
+RUN rustup default nightly
